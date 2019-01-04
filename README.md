@@ -2,7 +2,7 @@
 Tool to unpack/repack Settlers 3 dat archives
 
 ## Usage
-./S3DatPacker <option> <filename>
+./S3DatPacker option filename
 
 options:
 -u Unpack dat archive
