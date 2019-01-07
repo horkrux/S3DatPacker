@@ -18,15 +18,17 @@ int repack(char* path, char* extract_folder, char* file_name) {
 
 	filelist = fopen(file_name, "r");
 
-	if (!filelist) printf("Oops\n");
+	if (!filelist) {
+		printf("Couldn't load filelist\n");
+	}
+	else {
 
-	int worked = determine_dat_type(&type, filelist); //lol
+		int worked = determine_dat_type(&type, filelist); //lol
 
-	if (gather_contents(filelist, extract_folder)) printf("Something went wrong\n");
+		if (gather_contents(filelist, extract_folder)) printf("Something went wrong\n");
 
-
-
-	fclose(filelist);
+		fclose(filelist);
+	}
 	fclose(test);
 
 	return 0;
@@ -629,13 +631,12 @@ static int write_section_texture(const char* extract_folder, const int object_co
 			fwrite(&temp_y, 2, 1, test);
 			fwrite(&offsets_x[i], 1, 1, test);
 			fwrite(&offsets_y[i], 1, 1, test);
-
-			if (ftell(test) % 2 == 0) {
+			/*if (ftell(test) % 2 == 0) {
 				fwrite(&padding, 1, 2, test);
 			}
 			else {
 				fwrite(&padding, 1, 1, test);
-			}
+			}*/
 			fwrite(temp_result, temp_result_size, 1, test);
 			file_pos = ftell(test);
 
