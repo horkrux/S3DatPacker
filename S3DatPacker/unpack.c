@@ -10,8 +10,6 @@ FILE* filelist = NULL;
 
 const char* languages[8] = { "german/", "english/", "italian/", "french/", "polish/", "spanish/", "korean/", "schinese/" };
 
-int unpack_gfx(char*, char*, char*, s3_dat_file_format);
-
 void exit_exe(void)
 {
 	if (file)
@@ -45,8 +43,9 @@ int read_image(uint32_t address, uint32_t offset, char* file_name, char* name, f
 	case TEXTURE:
 		fread(&x, sizeof(x), 1, file);
 		fread(&y, sizeof(y), 1, file);
-		fread(offset_x, 1, 1, file);
-		fread(offset_y, 1, 1, file);
+		fread(offset_x, 1, 1, file); //type size
+		fread(offset_y, 1, 1, file); //type
+		if (!((ftell(file) - *offset_x) % 16)) fseek(file, 1, SEEK_CUR);
 		break;
 	case MENU:
 		fread(&x, sizeof(x), 1, file);
@@ -99,7 +98,7 @@ int read_image(uint32_t address, uint32_t offset, char* file_name, char* name, f
 
 	uint16_t* color_buffer;
 
-	if (file_type == CISPRITE) {
+	if (file_type == CISPRITE || file_type == MENU) {
 		color_buffer = malloc(sizeof(uint16_t)*x*y);
 		for (int i = 0; i < x*y; i++) {
 			if (pixelformat == RGB555) {
@@ -233,8 +232,6 @@ int main(int argc, char **argv)
 	strcat(extract_folder, ".extract");
 	_mkdir(extract_folder);
 
-	//FILE* temp = NULL;
-
 	char file_name[256];
 	strcpy(file_name, extract_folder);
 	strcat(file_name, "/filelist.xml");
@@ -322,6 +319,7 @@ int unpack_gfx(char* file_path, char* extract_folder, char* file_name, s3_dat_fi
 		return 1;
 	}
 
+	char result_buffer[256];
 	char digit_buffer[12];
 	char* internal_name;
 
@@ -418,12 +416,12 @@ int unpack_gfx(char* file_path, char* extract_folder, char* file_name, s3_dat_fi
 			fwrite("\t\t<TEXTURE EntityId=\"", 1, 21, filelist);
 			sprintf(digit_buffer, "%d", i);
 			fwrite(digit_buffer, 1, strlen(digit_buffer), filelist);
-			fwrite("\" OffsetX=\"", 1, 11, filelist);
-			sprintf(digit_buffer, "%d", (int8_t)offset_x);
-			fwrite(digit_buffer, 1, strlen(digit_buffer), filelist);
-			fwrite("\" OffsetY=\"", 1, 11, filelist);
+			fwrite("\" Type=\"", 1, 8, filelist);
 			sprintf(digit_buffer, "%d", (int8_t)offset_y);
 			fwrite(digit_buffer, 1, strlen(digit_buffer), filelist);
+			//fwrite("\" OffsetY=\"", 1, 11, filelist);
+			//sprintf(digit_buffer, "%d", (int8_t)offset_y);
+			//fwrite(digit_buffer, 1, strlen(digit_buffer), filelist);
 			fwrite("\" Path=\"", 1, 8, filelist);
 			fwrite(internal_name, 1, strlen(internal_name), filelist);
 			fwrite("\"/>\n", 1, 4, filelist);
@@ -458,8 +456,6 @@ int unpack_gfx(char* file_path, char* extract_folder, char* file_name, s3_dat_fi
 		sprintf(digit_buffer, "%d", i);
 		strcat(file_name, digit_buffer);
 		strcat(file_name, ".bmp");
-		//printf("adres=%d\n", file_data.main_header.terrain_ptr);
-		//printf("adres=%d\n", address);
 		if (!read_image(address, 0, file_name, file_path, MENU, &offset_x, &offset_y)) {
 			printf("Couldn't write menu texture %i\nAborting.\n", i);
 			return 0;

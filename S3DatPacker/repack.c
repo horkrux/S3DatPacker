@@ -119,13 +119,13 @@ static int gather_contents(FILE* filelist, const char* extract_folder) {
 			sscanf_s(section_buffer, "%*s EntityCount=\"%i\"", &entity_count);
 			entity_paths = malloc(sizeof(char*) * entity_count);
 			offsets_x_8 = malloc(sizeof(short)*entity_count);
-			offsets_y_8 = malloc(sizeof(short)*entity_count);
+			//offsets_y_8 = malloc(sizeof(short)*entity_count);
 
 			while (fgets(section_buffer, 256, filelist) != NULL) {
 				if (strstr(section_buffer, "<TEXTURE ") != NULL) {
-					sscanf_s(section_buffer, "%*s EntityId=\"%i\" OffsetX=\"%hi\" OffsetY=\"%hi\" Path=\"%[^\"]", &current_idx, &offset_x, &offset_y, &path_buffer, 256);
+					sscanf_s(section_buffer, "%*s EntityId=\"%i\" Type=\"%hi\" Path=\"%[^\"]", &current_idx, &offset_x, &path_buffer, 256);
 					offsets_x_8[path_idx] = offset_x;
-					offsets_y_8[path_idx] = offset_y;
+					//offsets_y_8[path_idx] = offset_y;
 					entity_paths[path_idx] = malloc(256);
 					strcpy(entity_paths[path_idx], path_buffer);
 					path_idx++;
@@ -135,7 +135,7 @@ static int gather_contents(FILE* filelist, const char* extract_folder) {
 				}
 			}
 
-			if (write_section_texture(extract_folder, entity_count, entity_paths, offsets_x_8, offsets_y_8)) return 1;
+			if (write_section_texture(extract_folder, entity_count, entity_paths, offsets_x_8)) return 1;
 
 			path_idx = 0;
 			entity_count = 0;
@@ -172,9 +172,9 @@ static int gather_contents(FILE* filelist, const char* extract_folder) {
 
 			if (entity_count) {
 				entity_subnum = malloc(sizeof(int) * entity_count);
-				entity_paths = malloc(sizeof(char*) * entity_count * 72); // :s
-				offsets_x = malloc(sizeof(short)*entity_count * 72);
-				offsets_y = malloc(sizeof(short)*entity_count * 72);
+				entity_paths = malloc(sizeof(char*) * entity_count * 300); // :s
+				offsets_x = malloc(sizeof(short)*entity_count * 300);
+				offsets_y = malloc(sizeof(short)*entity_count * 300);
 
 				while (fgets(section_buffer, 256, filelist) != NULL) {
 					if (strstr(section_buffer, "<SPRITE ") != NULL) {
@@ -216,9 +216,9 @@ static int gather_contents(FILE* filelist, const char* extract_folder) {
 		else if (strstr(section_buffer, "<CISPRITES ") != NULL) {
 			sscanf_s(section_buffer, "%*s EntityCount=\"%i\"", &entity_count);
 			entity_subnum = malloc(sizeof(int) * entity_count);
-			entity_paths = malloc(sizeof(char*) * entity_count * 72); // :s
-			offsets_x = malloc(sizeof(short)*entity_count * 72);
-			offsets_y = malloc(sizeof(short)*entity_count * 72);
+			entity_paths = malloc(sizeof(char*) * entity_count * 300); // :s
+			offsets_x = malloc(sizeof(short)*entity_count * 300);
+			offsets_y = malloc(sizeof(short)*entity_count * 300);
 
 			while (fgets(section_buffer, 256, filelist) != NULL) {
 				if (strstr(section_buffer, "<CISPRITE ") != NULL) {
@@ -260,9 +260,9 @@ static int gather_contents(FILE* filelist, const char* extract_folder) {
 		else if (strstr(section_buffer, "<SHADOWS ") != NULL) {
 			sscanf_s(section_buffer, "%*s EntityCount=\"%i\"", &entity_count);
 			entity_subnum = malloc(sizeof(int) * entity_count);
-			entity_paths = malloc(sizeof(char*) * entity_count * 72); // :s
-			offsets_x = malloc(sizeof(short)*entity_count * 72);
-			offsets_y = malloc(sizeof(short)*entity_count * 72);
+			entity_paths = malloc(sizeof(char*) * entity_count * 300); // :s
+			offsets_x = malloc(sizeof(short)*entity_count * 300);
+			offsets_y = malloc(sizeof(short)*entity_count * 300);
 
 			while (fgets(section_buffer, 256, filelist) != NULL) {
 				if (strstr(section_buffer, "<SHADOW ") != NULL) {
@@ -293,7 +293,6 @@ static int gather_contents(FILE* filelist, const char* extract_folder) {
 			}
 
 			if (write_section(SHADOW, extract_folder, entity_count, entity_paths, entity_subnum, offsets_x, offsets_y)) return 1;
-
 			entity_count = 0;
 			current_idx = 0;
 			prev_idx = 0;
@@ -575,7 +574,7 @@ static int write_section_menu(const char* extract_folder, const int object_count
 	return 0;
 }
 
-static int write_section_texture(const char* extract_folder, const int object_count, char** entity_paths, int8_t* offsets_x, int8_t* offsets_y) {
+static int write_section_texture(const char* extract_folder, const int object_count, char** entity_paths, int8_t* types) {
 	FILE* temp_file = NULL;
 	int temp_result_size;
 	uint16_t temp_x = 0;
@@ -584,6 +583,7 @@ static int write_section_texture(const char* extract_folder, const int object_co
 	unsigned char* temp_result;
 	int temp_size = 0;
 	uint8_t padding[] = { 0, 0 };
+	uint8_t type_size = 1;
 	char path_buffer[256];
 
 	int section_ptr_offset = file_pos;
@@ -629,14 +629,11 @@ static int write_section_texture(const char* extract_folder, const int object_co
 			temp_y = *(uint32_t*)(temp_data + 22);
 			fwrite(&temp_x, 2, 1, test);
 			fwrite(&temp_y, 2, 1, test);
-			fwrite(&offsets_x[i], 1, 1, test);
-			fwrite(&offsets_y[i], 1, 1, test);
-			/*if (ftell(test) % 2 == 0) {
-				fwrite(&padding, 1, 2, test);
-			}
-			else {
+			fwrite(&type_size, 1, 1, test);
+			fwrite(&types[i], 1, 1, test);
+			if (!((ftell(test)-1) % 16)) {			//this is apparantly a thing
 				fwrite(&padding, 1, 1, test);
-			}*/
+			}
 			fwrite(temp_result, temp_result_size, 1, test);
 			file_pos = ftell(test);
 
@@ -647,8 +644,8 @@ static int write_section_texture(const char* extract_folder, const int object_co
 			fseek(test, file_pos, 0);
 			fwrite(&padding, 1, 2, test);
 			fwrite(&padding, 1, 2, test);
-			fwrite(&offsets_x[i], 1, 1, test);
-			fwrite(&offsets_y[i], 1, 1, test);
+			fwrite(&type_size, 1, 1, test);
+			fwrite(&types[i], 1, 1, test);
 			if (ftell(test) % 2 == 0) {
 				fwrite(&padding, 1, 2, test);
 			}
@@ -665,8 +662,7 @@ static int write_section_texture(const char* extract_folder, const int object_co
 	}
 	
 	fclose(temp_file);
-	free(offsets_x);
-	free(offsets_y);
+	free(types);
 	free(entity_paths);
 
 	return 0;
@@ -700,11 +696,9 @@ static int write_section(const file_type type, const char* extract_folder, const
 		fwrite(&file_pos, 4, 1, test);
 		break;
 	}
-
 	fseek(test, file_pos, 0);
 
 	int header_pos = write_sub_header(type, object_count);
-
 	file_pos = ftell(test);
 
 	s3_dat_subsubheader subsub_header;
@@ -717,7 +711,6 @@ static int write_section(const file_type type, const char* extract_folder, const
 	int idx = 0;
 	int sub_offset = 0;
 	int temp_offset = 0;
-
 
 	for (int i = 0; i < object_count; i++) {
 		fseek(test, header_pos, 0);
@@ -872,17 +865,14 @@ static int write_sub_header(const file_type type, const int entity_count) {
 		default:
 			break;
 	}
-
 	header_pos = ftell(test);
 
 	int* offset_list;
 
-	
 	offset_list = calloc(entity_count, sizeof(int));
 	fwrite(offset_list, 4, entity_count, test);
 	
 	
 	free(offset_list);
-
 	return header_pos;
 }

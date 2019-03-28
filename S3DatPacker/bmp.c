@@ -1,5 +1,5 @@
 #include "bmp.h"
-
+#pragma once
 #pragma pack(push)
 #pragma pack(1)
 
@@ -185,6 +185,9 @@ int compress_bitmap(unsigned char* result, char* data, const file_type type) {
 		if (type == CISPRITE) {
 			prev_pixel_value = 0xff;
 		}
+		else if (type == MENU) {
+			prev_pixel_value = 0xf81f;
+		}
 		else {
 			prev_pixel_value = 0;
 		}
@@ -196,8 +199,8 @@ int compress_bitmap(unsigned char* result, char* data, const file_type type) {
 			else {
 				pixel_value = *(uint16_t*)(data + start + j * 2 + x * i * 2 + (i * num_pads));
 			}
-			if (!pixel_value && type != CISPRITE || pixel_value == 0xff && type == CISPRITE) {
-				if (result[current_meta + 1] < 127 && (prev_pixel_value == 0 && type != CISPRITE || prev_pixel_value == 0xff && type == CISPRITE)) {
+			if (!pixel_value && (type != CISPRITE && type != MENU) || pixel_value == 0xff && type == CISPRITE || pixel_value == 0xf81f && type == MENU) {
+				if (result[current_meta + 1] < 127 && (prev_pixel_value == 0 && type != CISPRITE && type != MENU || prev_pixel_value == 0xff && type == CISPRITE || prev_pixel_value == 0xf81f && type == MENU)) {
 					result[current_meta + 1]++;
 				}
 				else {
